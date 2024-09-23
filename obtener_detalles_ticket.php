@@ -5,7 +5,7 @@ if (!isset($_GET["id"])) {
 $id = $_GET["id"];
 $datos = [
     "id" => $id,
-    "nombreImpresora" => "PT210",
+    "nombreImpresora" => "Termica",
     "productos" => [
         [
             "nombre" => "Alcohol isopropílico",

@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Imprimir ticket</title>
-    <script src="./ConectorJavaScript.js"></script>
 </head>
 
 <body>
@@ -17,22 +16,50 @@
         const id = urlSearchParams.get("id");
         const respuestaRaw = await fetch("./obtener_detalles_ticket.php?id=" + id);
         const detallesTicket = await respuestaRaw.json();
+        // Documentación de operaciones:
+        // https://parzibyte.me/http-esc-pos-desktop-docs/es/
+        const operaciones = [{
+                nombre: "EscribirTexto",
+                argumentos: ["Ticket de venta\n"],
+            },
 
-        // Empezar a usar el plugin
-        const conector = new ConectorPluginV3();
-        conector
-            .EscribirTexto("Ticket de venta\n")
-            .EscribirTexto("Fecha: " + detallesTicket.fecha)
-            .Feed(1);
+            {
+                nombre: "EscribirTexto",
+                argumentos: ["Fecha: " + detallesTicket.fecha],
+            },
+            {
+                nombre: "Feed",
+                argumentos: [1],
+            },
+        ];
         for (const producto of detallesTicket.productos) {
-            conector.EscribirTexto(producto.nombre + " precio: " + producto.precio);
-            conector.Feed(1);
+            operaciones.push({
+                nombre: "EscribirTexto",
+                argumentos: [
+                    producto.nombre + " precio: " + producto.precio
+                ]
+            }, {
+                nombre: "Feed",
+                argumentos: [
+                    1,
+                ]
+            });
         }
-        const respuesta = await conector.imprimirEn(detallesTicket.nombreImpresora);
-        if (!respuesta) {
-            alert("Error al imprimir ticket: " + respuesta);
-        } else {
+        const cargaUtil = {
+            "serial": "",
+            "nombreImpresora": detallesTicket.nombreImpresora,
+            "operaciones": operaciones,
+        };
+        const respuestaHttp = await fetch("http://localhost:8000/imprimir", {
+            method: "POST",
+            body: JSON.stringify(cargaUtil),
+        })
+        const respuestaComoJson = await respuestaHttp.json();
+        if (respuestaComoJson.ok) {
             window.location.href = "./index.php";
+        } else {
+            // El mensaje de error está en la propiedad message
+            alert("Error al imprimir ticket: " + respuestaComoJson.message);
         }
     });
 </script>
